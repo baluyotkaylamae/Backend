@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
   },
   "author": "",
   "license": "ISC",
@@ -14,7 +15,7 @@
     "express": "^4.21.0",
     "express-jwt": "^8.4.1",
     "jsonwebtoken": "^9.0.2",
-    "mailer": "^0.6.7",
+    "mailer": "^0.6.6",
     "mongodb": "^6.8.1",
     "mongoose": "^8.6.2",
     "morgan": "^1.10.0",
