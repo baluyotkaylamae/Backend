@@ -107,36 +107,78 @@ router.post('/', async (req, res) => {
     res.send(user);
 })
 
-router.put('/:id', async (req, res) => {
+// router.put('/:id', async (req, res) => {
+//     try {
+//         const userExist = await User.findById(req.params.id);
+//         if (!userExist) {
+//             return res.status(404).json({ success: false, message: 'User not found' });
+//         }
+
+//         let newPassword;
+//         if (req.body.password) {
+//             newPassword = bcrypt.hashSync(req.body.password, 10);
+//         } else {
+//             newPassword = userExist.passwordHash;
+//         }
+
+//         const updatedUser = await User.findByIdAndUpdate(
+//             req.params.id,
+//             {
+//                 name: req.body.name,
+//                 email: req.body.email,
+//                 passwordHash: newPassword,
+//                 phone: req.body.phone,
+//                 isAdmin: req.body.isAdmin,
+//                 street: req.body.street,
+//                 apartment: req.body.apartment,
+//                 zip: req.body.zip,
+//                 city: req.body.city,
+//                 country: req.body.country,
+//             },
+//             { new: true }
+//         );
+
+//         if (!updatedUser) {
+//             return res.status(400).json({ success: false, message: 'User update failed' });
+//         }
+
+//         return res.status(200).json({ success: true, message: 'User updated successfully', user: updatedUser });
+//     } catch (error) {
+//         console.error('Error updating user:', error);
+//         return res.status(500).json({ success: false, message: 'Internal server error' });
+//     }
+// });
+
+router.put('/:id', uploadOptions.single('image'), async (req, res) => {
     try {
         const userExist = await User.findById(req.params.id);
         if (!userExist) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        let newPassword;
-        if (req.body.password) {
-            newPassword = bcrypt.hashSync(req.body.password, 10);
-        } else {
-            newPassword = userExist.passwordHash;
+        const newPassword = req.body.password ? bcrypt.hashSync(req.body.password, 10) : userExist.passwordHash;
+
+        const updateData = {
+            name: req.body.name,
+            email: req.body.email,
+            passwordHash: newPassword,
+            phone: req.body.phone,
+            isAdmin: req.body.isAdmin,
+            street: req.body.street,
+            apartment: req.body.apartment,
+            zip: req.body.zip,
+            city: req.body.city,
+            country: req.body.country,
+        };
+
+      
+        if (req.file) {
+            const fileName = req.file.filename; 
+            const basePath = `${req.protocol}://${req.get('host')}/public/uploads/`; 
+            updateData.image = `${basePath}${fileName}`; 
         }
 
-        const updatedUser = await User.findByIdAndUpdate(
-            req.params.id,
-            {
-                name: req.body.name,
-                email: req.body.email,
-                passwordHash: newPassword,
-                phone: req.body.phone,
-                isAdmin: req.body.isAdmin,
-                street: req.body.street,
-                apartment: req.body.apartment,
-                zip: req.body.zip,
-                city: req.body.city,
-                country: req.body.country,
-            },
-            { new: true }
-        );
+        const updatedUser = await User.findByIdAndUpdate(req.params.id, updateData, { new: true });
 
         if (!updatedUser) {
             return res.status(400).json({ success: false, message: 'User update failed' });
@@ -144,10 +186,10 @@ router.put('/:id', async (req, res) => {
 
         return res.status(200).json({ success: true, message: 'User updated successfully', user: updatedUser });
     } catch (error) {
-        console.error('Error updating user:', error);
-        return res.status(500).json({ success: false, message: 'Internal server error' });
+        return res.status(500).json({ success: false, message: 'Internal server error', error: error.message });
     }
 });
+
 
 router.post('/login', async (req, res) => {
     console.log(req.body.email);
