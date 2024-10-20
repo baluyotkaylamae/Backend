@@ -19,11 +19,12 @@ app.use("/public/uploads", express.static(__dirname + "/public/uploads"));
 
 // Routes
 const usersRoutes = require("./routes/users");
+const categoryRoutes = require("./routes/categories");
 
 const api = process.env.API_URL;
 
 app.use(`${api}/users`, usersRoutes);
-
+app.use(`${api}/category`, categoryRoutes);
 // Database
 mongoose
   .connect(process.env.CONNECTION_STRING, {

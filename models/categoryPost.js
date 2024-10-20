@@ -9,10 +9,6 @@ const categorySchema = new mongoose.Schema({
     type: String,
     required: true, 
   },
-  images: {
-    type: [String], 
-    required: true,
-  },
 });
 
 categorySchema.virtual('id').get(
