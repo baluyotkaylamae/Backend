@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const postController = require('../controller/PostController'); // Adjust the path as necessary
+const upload = require('../../config/multer');
 // const { authenticate } = require('../middleware/auth'); // Middleware to protect routes
 
 // Route for creating a new post
-router.post('/', postController.createPost);
+router.post('/posts', upload.array('images', 5), postController.createPost);
 
 // Route for getting all posts
 router.get('/', postController.getPosts);

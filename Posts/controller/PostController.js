@@ -3,22 +3,51 @@ const cloudinary = require('../../config/configCloudinary');
 const upload = require('../../config/multer');
 
 // Create a new post
-exports.createPost = async (req, res) => {
-    const { title, content, image, user, category } = req.body;
+// exports.createPost = async (req, res) => {
+//     const { title, content, image, user, category } = req.body;
 
+//     // Check for missing fields
+//     if (!title || !content || !user || !category) {
+//         return res.status(400).json({ message: 'Title, content, user ID, and category are required.' });
+//     }
+
+//     try {
+//         const post = new Post({
+//             title,
+//             content,
+//             image: image || '',
+//             user, // Use user from the request body
+//             category, // Use category from the request body
+//             likes: 0 // Initialize likes to 0
+//         });
+
+//         const savedPost = await post.save();
+//         res.status(201).json(savedPost);
+//     } catch (error) {
+//         res.status(400).json({ message: error.message });
+//     }
+// };
+
+exports.createPost = async (req, res) => {
+    const { title, content, user, category } = req.body;
+    
     // Check for missing fields
     if (!title || !content || !user || !category) {
         return res.status(400).json({ message: 'Title, content, user ID, and category are required.' });
     }
 
     try {
+        // Upload each image to Cloudinary
+        const images = req.files.map(file => file.path); // Array of Cloudinary URLs from each uploaded file
+
+        // Create post with the array of image URLs
         const post = new Post({
             title,
             content,
-            image: image || '',
-            user, // Use user from the request body
-            category, // Use category from the request body
-            likes: 0 // Initialize likes to 0
+            images,  // Save array of image URLs
+            user,
+            category,
+            likes: 0
         });
 
         const savedPost = await post.save();
