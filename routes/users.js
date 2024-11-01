@@ -98,7 +98,7 @@ router.post('/', async (req, res) => {
         city: req.body.city,
         country: req.body.country,
     })
-    
+
     user = await user.save();
 
     if (!user)
@@ -171,11 +171,11 @@ router.put('/:id', uploadOptions.single('image'), async (req, res) => {
             country: req.body.country,
         };
 
-      
+
         if (req.file) {
-            const fileName = req.file.filename; 
-            const basePath = `${req.protocol}://${req.get('host')}/public/uploads/`; 
-            updateData.image = `${basePath}${fileName}`; 
+            const fileName = req.file.filename;
+            const basePath = `${req.protocol}://${req.get('host')}/public/uploads/`;
+            updateData.image = `${basePath}${fileName}`;
         }
 
         const updatedUser = await User.findByIdAndUpdate(req.params.id, updateData, { new: true });
@@ -209,6 +209,10 @@ router.post('/login', async (req, res) => {
             secret,
             { expiresIn: '1d' }
         );
+        console.log('Generated Token:', token);
+
+        const decoded = jwt.verify(token, secret);
+        console.log('Decoded token:', decoded); 
 
         res.status(200).send({ user: user.email, token: token });
     } else {
@@ -227,7 +231,7 @@ router.post('/register', uploadOptions.single('image'), async (req, res) => {
     const file = req.file;
     const fileName = file.filename;
     const basePath = `${req.protocol}://${req.get('host')}/public/uploads/`;
-    
+
     let user = new User({
         name: req.body.name,
         email: req.body.email,
@@ -241,7 +245,7 @@ router.post('/register', uploadOptions.single('image'), async (req, res) => {
         city: req.body.city,
         country: req.body.country,
     });
-    
+
     user = await user.save();
 
     if (!user)
@@ -285,7 +289,7 @@ router.post('/googlelogin', async (req, res) => {
             user = await User.create({
                 name: response.name,
                 email: response.email,
-                password: '', 
+                password: '',
                 avatar: {
                     public_id: 'avatars/avatar-default',
                     url: response.picture,

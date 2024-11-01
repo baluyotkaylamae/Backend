@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const postController = require('../controller/PostController'); // Adjust the path as necessary
 const upload = require('../../config/multer');
-// const { authenticate } = require('../middleware/auth'); // Middleware to protect routes
+const authJwt = require('../../helpers/jwt'); 
 
 // Route for creating a new post
 router.post('/posts', upload.array('images', 5), postController.createPost);
@@ -14,10 +14,16 @@ router.get('/', postController.getPosts);
 router.get('/:id', postController.getPostById);
 
 // Route for updating a post by ID
-router.put('/:id', postController.updatePost);
+router.put('/:id', upload.array('images', 5), postController.updatePost);
 
 // Route for deleting a post by ID
-router.delete('/:id',  postController.deletePost);
+router.delete('/:id', postController.deletePost);
+
+// Protected routes for comments - Add the authJwt middleware
+router.post('/:postId/comments', authJwt(), postController.addComment); // Add a comment to a post
+router.post('/:postId/comments/:commentId/replies', authJwt(), postController.addReply); // Add a reply to a comment
+router.put('/:postId/comments/:commentId', authJwt(), postController.updateComment); // Update a comment by ID
+router.delete('/:postId/comments/:commentId', authJwt(), postController.deleteComment); // Delete a comment by ID
 
 // Export the router
 module.exports = router;
