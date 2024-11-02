@@ -5,7 +5,7 @@ const upload = require('../../config/multer');
 const authJwt = require('../../helpers/jwt'); 
 
 // Route for creating a new post
-router.post('/posts', upload.array('images', 5), postController.createPost);
+router.post('/', upload.array('images', 5), postController.createPost);
 
 // Route for getting all posts
 router.get('/', postController.getPosts);

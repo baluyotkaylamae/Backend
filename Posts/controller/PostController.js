@@ -5,23 +5,24 @@ const jwt = require('jsonwebtoken');
 
 // Create a new post
 exports.createPost = async (req, res) => {
-    const { title, content, user, category } = req.body;
+    const { title, content, category } = req.body;
+    const userId = req.auth.userId; // Get userId from the authenticated user
 
     // Check for missing fields
-    if (!title || !content || !user || !category) {
+    if (!title || !content || !userId || !category) {
         return res.status(400).json({ message: 'Title, content, user ID, and category are required.' });
     }
 
     try {
         // Upload each image to Cloudinary
-        const images = req.files.map(file => file.path); // Array of Cloudinary URLs from each uploaded file
+        const images = req.files ? req.files.map(file => file.path) : []; // Handle cases with no uploaded files
 
         // Create post with the array of image URLs
         const post = new Post({
             title,
             content,
             images,  // Save array of image URLs
-            user,
+            user: userId, // Use the authenticated user's ID
             category,
             likes: 0
         });
@@ -33,17 +34,8 @@ exports.createPost = async (req, res) => {
     }
 };
 
+
 // Get all posts
-// exports.getPosts = async (req, res) => {
-//     try {
-//         const posts = await Post.find()
-//             .populate('user', 'name email') // Populate user details
-//             .populate('category', 'name description'); // Populate category details
-//         res.status(200).json(posts);
-//     } catch (error) {
-//         res.status(500).json({ message: error.message });
-//     }
-// };
 exports.getPosts = async (req, res) => {
     try {
         const posts = await Post.find()
@@ -61,17 +53,6 @@ exports.getPosts = async (req, res) => {
 
 
 // Get a single post by ID
-// exports.getPostById = async (req, res) => {
-//     try {
-//         const post = await Post.findById(req.params.id)
-//             .populate('user', 'name email')
-//             .populate('category', 'name description'); // Populate category details
-//         if (!post) return res.status(404).json({ message: 'Post not found' });
-//         res.status(200).json(post);
-//     } catch (error) {
-//         res.status(500).json({ message: error.message });
-//     }
-// };
 exports.getPostById = async (req, res) => {
     try {
         const post = await Post.findById(req.params.id)
@@ -134,37 +115,6 @@ exports.deletePost = async (req, res) => {
 
 
 // Add a new comment to a post
-// exports.addComment = async (req, res) => {
-//     console.log('User from token:', req.user); // Log user data
-
-
-//     const { postId } = req.params;
-//     const { content } = req.body;
-
-
-//     const userId = req.auth.userId;
-
-//     if (!userId || !content) {
-//         return res.status(400).json({ message: 'User ID and content are required.' });
-
-//     }
-
-//     try {
-//         const post = await Post.findById(postId);
-//         if (!post) {
-//             return res.status(404).json({ message: 'Post not found' });
-//         }
-
-//         // Add new comment to the comments array
-//         post.comments.push({ user: userId, content }); // Use the userId from the token
-//         const updatedPost = await post.save();
-
-//         res.status(201).json(updatedPost);
-//     } catch (error) {
-//         console.error('Error adding comment:', error); // Log error details
-//         res.status(400).json({ message: error.message });
-//     }
-// };
 exports.addComment = async (req, res) => {
     console.log('User from token:', req.user); // Log user data
 
@@ -202,31 +152,6 @@ exports.addComment = async (req, res) => {
 
 
 // Add a reply to a comment within a post
-// exports.addReply = async (req, res) => {
-//     const { postId, commentId } = req.params;
-//     const { user, content } = req.body;
-
-//     if (!user || !content) {
-//         return res.status(400).json({ message: 'User ID and content are required.' });
-//     }
-
-//     try {
-//         const post = await Post.findById(postId);
-//         if (!post) return res.status(404).json({ message: 'Post not found' });
-
-//         const comment = post.comments.id(commentId);
-//         if (!comment) return res.status(404).json({ message: 'Comment not found' });
-
-//         // Add reply to the selected comment
-//         comment.replies.push({ user, content });
-//         const updatedPost = await post.save();
-
-//         res.status(201).json(updatedPost);
-//     } catch (error) {
-//         res.status(400).json({ message: error.message });
-//     }
-// };
-
 exports.addReply = async (req, res) => {
     const { postId, commentId } = req.params;
     const { content } = req.body;
@@ -265,51 +190,7 @@ exports.addReply = async (req, res) => {
 };
 
 
-// // Update a comment by ID
-// exports.updateComment = async (req, res) => {
-//     const { postId, commentId } = req.params;
-//     const { content } = req.body;
-
-//     try {
-//         const post = await Post.findById(postId);
-//         if (!post) return res.status(404).json({ message: 'Post not found' });
-
-//         const comment = post.comments.id(commentId);
-//         if (!comment) return res.status(404).json({ message: 'Comment not found' });
-
-//         // Update comment content
-//         comment.content = content || comment.content;
-//         const updatedPost = await post.save();
-
-//         res.status(200).json(updatedPost);
-//     } catch (error) {
-//         res.status(400).json({ message: error.message });
-//     }
-// };
-
-// exports.deleteComment = async (req, res) => {
-//     const { postId, commentId } = req.params;
-
-//     try {
-//         const post = await Post.findById(postId);
-//         if (!post) return res.status(404).json({ message: 'Post not found' });
-
-//         // Find the comment index and remove it manually
-//         const commentIndex = post.comments.findIndex(comment => comment._id.toString() === commentId);
-//         if (commentIndex === -1) return res.status(404).json({ message: 'Comment not found' });
-
-//         // Remove the comment by index
-//         post.comments.splice(commentIndex, 1);
-
-//         // Save the updated post
-//         const updatedPost = await post.save();
-
-//         res.status(204).send(); // No content response for successful deletion
-//     } catch (error) {
-//         res.status(500).json({ message: error.message });
-//     }
-// };
-
+//  Update a comment by ID
 exports.updateComment = async (req, res) => {
     const { postId, commentId } = req.params;
     const { content } = req.body;
