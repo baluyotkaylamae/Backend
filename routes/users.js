@@ -5,6 +5,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const mongoose = require('mongoose');
+const upload = require('../config/multer');
+const cloudinary = require('../config/configCloudinary');
 
 const FILE_TYPE_MAP = {
     'image/png': 'png',
@@ -12,22 +14,7 @@ const FILE_TYPE_MAP = {
     'image/jpg': 'jpg'
 };
 
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        const isValid = FILE_TYPE_MAP[file.mimetype];
-        let uploadError = new Error('invalid image type');
-
-        if (isValid) {
-            uploadError = null;
-        }
-        cb(uploadError, 'public/uploads');
-    },
-    filename: function (req, file, cb) {
-        const fileName = file.originalname.split(' ').join('-');
-        const extension = FILE_TYPE_MAP[file.mimetype];
-        cb(null, `${fileName}-${Date.now()}.${extension}`);
-    }
-});
+const storage = multer.memoryStorage();
 
 const uploadOptions = multer({ storage: storage });
 
@@ -149,8 +136,9 @@ router.post('/', async (req, res) => {
 //     }
 // });
 
-router.put('/:id', uploadOptions.single('image'), async (req, res) => {
+router.put('/:id', upload.single('image'), async (req, res) => {
     try {
+
         const userExist = await User.findById(req.params.id);
         if (!userExist) {
             return res.status(404).json({ success: false, message: 'User not found' });
@@ -171,31 +159,33 @@ router.put('/:id', uploadOptions.single('image'), async (req, res) => {
             country: req.body.country,
         };
 
-
+        // Handle image upload
         if (req.file) {
-            const fileName = req.file.filename;
-            const basePath = `${req.protocol}://${req.get('host')}/public/uploads/`;
-            updateData.image = `${basePath}${fileName}`;
+            console.log('Image file received:', req.file); // Debugging line
+            // The CloudinaryStorage already handles uploading; you just need to save the URL
+            const uploadedImageUrl = req.file.path; // This should be the URL from Cloudinary
+            console.log('Uploaded image URL:', uploadedImageUrl); // Verify this output
+            updateData.image = uploadedImageUrl; // Store the image URL from Cloudinary
         }
 
         const updatedUser = await User.findByIdAndUpdate(req.params.id, updateData, { new: true });
-
         if (!updatedUser) {
             return res.status(400).json({ success: false, message: 'User update failed' });
         }
 
-        return res.status(200).json({ success: true, message: 'User updated successfully', user: updatedUser });
+        return res.status(200).json({ success: true, message: 'User updated successfully', data: updatedUser });
     } catch (error) {
-        return res.status(500).json({ success: false, message: 'Internal server error', error: error.message });
+        console.error("Error updating user:", error);
+        return res.status(500).json({ success: false, message: 'Server error' });
     }
 });
 
-
 router.post('/login', async (req, res) => {
-    console.log(req.body.email);
+    console.log(req.body);
     const user = await User.findOne({ email: req.body.email });
 
     const secret = process.env.secret;
+    console.log('JWT Secret:', secret);
     if (!user) {
         return res.status(400).send('The user not found');
     }
@@ -212,7 +202,7 @@ router.post('/login', async (req, res) => {
         console.log('Generated Token:', token);
 
         const decoded = jwt.verify(token, secret);
-        console.log('Decoded token:', decoded); 
+        console.log('Decoded token:', decoded);
 
         res.status(200).send({ user: user.email, token: token });
     } else {
@@ -220,38 +210,31 @@ router.post('/login', async (req, res) => {
     }
 });
 
-router.post('/register', uploadOptions.single('image'), async (req, res) => {
-    console.log("Incoming registration request:", req.body); // Check if req.body has the data
-    console.log("Uploaded file:", req.file); // Should log the uploaded file details
+// Use the upload middleware to handle image uploads
+router.post('/register', upload.single('image'), async (req, res) => {
+    try {
+        // Create user object
+        const user = new User({
+            name: req.body.name,
+            email: req.body.email,
+            passwordHash: bcrypt.hashSync(req.body.password, 10), // Remember to hash the password appropriately
+            phone: req.body.phone,
+            isAdmin: req.body.isAdmin === 'true', // Convert to boolean
+            street: req.body.street,
+            apartment: req.body.apartment,
+            zip: req.body.zip,
+            city: req.body.city,
+            country: req.body.country,
+            image: req.file.path, // The path returned by Cloudinary
+        });
 
-    if (!req.file) {
-        return res.status(400).send('No image in the request');
+        // Save the user to the database
+        await user.save();
+
+        return res.status(200).json({ message: 'User registered successfully!', user });
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
     }
-
-    const file = req.file;
-    const fileName = file.filename;
-    const basePath = `${req.protocol}://${req.get('host')}/public/uploads/`;
-
-    let user = new User({
-        name: req.body.name,
-        email: req.body.email,
-        image: `${basePath}${fileName}`,
-        passwordHash: bcrypt.hashSync(req.body.password, 10),
-        phone: req.body.phone,
-        isAdmin: req.body.isAdmin,
-        street: req.body.street,
-        apartment: req.body.apartment,
-        zip: req.body.zip,
-        city: req.body.city,
-        country: req.body.country,
-    });
-
-    user = await user.save();
-
-    if (!user)
-        return res.status(400).send('the user cannot be created!')
-
-    res.send(user);
 });
 
 router.delete('/:id', async (req, res) => {
