@@ -44,7 +44,11 @@ exports.getPosts = async (req, res) => {
             .populate({
                 path: 'comments.user',
                 select: 'name image', // Populate user details for comments
-            });
+            })
+            .populate({
+                path: 'comments.replies.user', // Populate user details for replies within comments
+                select: 'name image', })
+            ;
         res.status(200).json(posts);
     } catch (error) {
         res.status(500).json({ message: error.message });
