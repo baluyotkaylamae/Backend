@@ -252,3 +252,62 @@ exports.deleteComment = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+// Get posts by a specific user
+exports.getUserPosts = async (req, res) => {
+    const { userId } = req.params;
+
+    try {
+        const userPosts = await Post.find({ user: userId })
+            .populate('user', 'name email image') // Populate user details
+            .populate('category', 'name description') // Populate category details
+            .populate({
+                path: 'comments.user',
+                select: 'name image', // Populate user details for comments
+            })
+            .populate({
+                path: 'comments.replies.user',
+                select: 'name image', // Populate user details for replies
+            });
+
+        if (!userPosts.length) {
+            // return res.status(404).json({ message: 'No posts found for this user.' });
+        }
+
+        res.status(200).json(userPosts);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+exports.likePost = async (req, res) => {
+    const { postId } = req.params;
+    const userId = req.auth.userId;
+
+    try {
+        const post = await Post.findById(postId);
+        if (!post) {
+            return res.status(404).json({ message: 'Post not found' });
+        }
+
+        // Check if the user has already liked the post
+        const hasLiked = post.likedBy.includes(userId);
+
+        if (hasLiked) {
+            // If the user has liked, remove the like
+            post.likes -= 1;
+            post.likedBy = post.likedBy.filter(id => id.toString() !== userId);
+        } else {
+            // If the user hasn't liked, add the like
+            post.likes += 1;
+            post.likedBy.push(userId);
+        }
+
+        await post.save();
+
+        res.status(200).json({ likes: post.likes, likedBy: post.likedBy });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+

@@ -24,6 +24,8 @@ router.post('/:postId/comments', authJwt(), postController.addComment); // Add a
 router.post('/:postId/comments/:commentId/replies', authJwt(), postController.addReply); // Add a reply to a comment
 router.put('/:postId/comments/:commentId', authJwt(), postController.updateComment); // Update a comment by ID
 router.delete('/:postId/comments/:commentId', authJwt(), postController.deleteComment); // Delete a comment by ID
+router.get('/user/:userId', postController.getUserPosts);
+router.put('/:postId/like', authJwt(), postController.likePost);
 
 // Export the router
 module.exports = router;
