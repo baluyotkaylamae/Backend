@@ -230,7 +230,7 @@ exports.updateComment = async (req, res) => {
 exports.deleteComment = async (req, res) => {
     const { postId, commentId } = req.params;
     const userId = req.auth.userId;
-    const isAdmin = req.auth.isAdmin; // Assume isAdmin is set in authJwt middleware
+    const isAdmin = req.auth.isAdmin;
 
     try {
         const post = await Post.findById(postId);
@@ -244,9 +244,10 @@ exports.deleteComment = async (req, res) => {
             return res.status(403).json({ message: 'Unauthorized to delete this comment' });
         }
 
-        // Remove the comment and save the post
-        post.comments.id(commentId).remove();
-        const updatedPost = await post.save();
+        // Remove the comment from the array
+        post.comments.pull(commentId);  // Using pull to remove by comment ID
+        await post.save();
+        
         res.status(204).send(); // No content response for successful deletion
     } catch (error) {
         res.status(500).json({ message: error.message });
