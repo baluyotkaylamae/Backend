@@ -250,16 +250,16 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
-router.get(`/get/count`, async (req, res) => {
-    const userCount = await User.countDocuments();
+// router.get(`/get/count`, async (req, res) => {
+//     const userCount = await User.countDocuments();
 
-    if (!userCount) {
-        return res.status(500).json({ success: false });
-    }
-    res.send({
-        userCount: userCount
-    });
-});
+//     if (!userCount) {
+//         return res.status(500).json({ success: false });
+//     }
+//     res.send({
+//         userCount: userCount
+//     });
+// });
 
 router.post('/googlelogin', async (req, res) => {
     const { response } = req.body;

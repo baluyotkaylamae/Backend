@@ -21,12 +21,14 @@ app.use("/public/uploads", express.static(__dirname + "/public/uploads"));
 const usersRoutes = require("./routes/users");
 const categoryRoutes = require("./routes/categories");
 const postsRoutes = require("./Posts/route/Posts");
+const dashboard = require("./routes/Dashboard");
 
 const api = process.env.API_URL;
 
 app.use(`${api}/users`, usersRoutes);
 app.use(`${api}/category`, categoryRoutes);
 app.use(`${api}/posts`, postsRoutes);
+app.use(`${api}/dashboards`, dashboard);
 
 // Database
 mongoose
