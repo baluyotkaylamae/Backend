@@ -13,9 +13,14 @@ app.options("*", cors());
 // Middleware
 app.use(express.json());
 app.use(morgan('tiny'));
-app.use(authJwt());
+app.use(authJwt()); // Ensure proper exclusions
 app.use(errorHandler);
 app.use("/public/uploads", express.static(__dirname + "/public/uploads"));
+
+// Health-check route
+app.get('/health', (req, res) => {
+    res.status(200).send('OK');
+});
 
 // Routes
 const usersRoutes = require("./routes/users");
