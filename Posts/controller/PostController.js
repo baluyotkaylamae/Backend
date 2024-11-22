@@ -312,3 +312,74 @@ exports.likePost = async (req, res) => {
     }
 };
 
+// Edit a reply within a comment
+exports.editReply = async (req, res) => {
+    const { postId, commentId, replyId } = req.params;
+    const { content } = req.body;
+    const userId = req.auth.userId;
+    const isAdmin = req.auth.isAdmin;
+
+    console.log('Request params:', { postId, commentId, replyId });
+    console.log('Request body:', { content });
+    console.log('User:', { userId, isAdmin });
+
+    if (!content) {
+        return res.status(400).json({ message: 'Reply content is required.' });
+    }
+
+    try {
+        const post = await Post.findById(postId);
+        if (!post) return res.status(404).json({ message: 'Post not found' });
+
+        const comment = post.comments.id(commentId);
+        if (!comment) return res.status(404).json({ message: 'Comment not found' });
+
+        const reply = comment.replies.id(replyId);
+        if (!reply) return res.status(404).json({ message: 'Reply not found' });
+
+        if (reply.user.toString() !== userId && !isAdmin) {
+            return res.status(403).json({ message: 'Unauthorized to edit this reply' });
+        }
+
+        reply.content = content;
+        await post.save();
+        res.status(200).json({ message: 'Reply updated successfully', post });
+    } catch (error) {
+        console.error('Error updating reply:', error);
+        res.status(400).json({ message: error.message });
+    }
+};
+
+
+// Delete a reply within a comment
+exports.deleteReply = async (req, res) => {
+    const { postId, commentId, replyId } = req.params;
+    const userId = req.auth.userId;
+    const isAdmin = req.auth.isAdmin; // For admin privileges
+
+    try {
+        const post = await Post.findById(postId);
+        if (!post) return res.status(404).json({ message: 'Post not found' });
+
+        const comment = post.comments.id(commentId);
+        if (!comment) return res.status(404).json({ message: 'Comment not found' });
+
+        const reply = comment.replies.id(replyId);
+        if (!reply) return res.status(404).json({ message: 'Reply not found' });
+
+        // Check if the user is the author of the reply or an admin
+        if (reply.user.toString() !== userId && !isAdmin) {
+            return res.status(403).json({ message: 'Unauthorized to delete this reply.' });
+        }
+
+        // Remove the reply
+        comment.replies.pull(replyId);
+        await post.save();
+
+        res.status(204).send(); // No content response for successful deletion
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+

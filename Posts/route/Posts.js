@@ -27,5 +27,9 @@ router.delete('/:postId/comments/:commentId', authJwt(), postController.deleteCo
 router.get('/user/:userId', postController.getUserPosts);
 router.put('/:postId/like', authJwt(), postController.likePost);
 
+// Routes for managing replies
+router.put('/:postId/comments/:commentId/replies/:replyId', authJwt(), postController.editReply); // Edit a reply
+router.delete('/:postId/comments/:commentId/replies/:replyId', authJwt(), postController.deleteReply); // Delete a reply
+
 // Export the router
 module.exports = router;
