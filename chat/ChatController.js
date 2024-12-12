@@ -5,23 +5,75 @@ const { User } = require("../models/user");
 
 const router = express.Router();
 
-// Fetch all chat messages (general)
+// // Fetch all chat messages (general)
+
 router.get("/chats", async (req, res) => {
     try {
-        const chats = await Chat.find()
-            .populate("user", "name email")
-            .populate("sender", "name email");
+        // Get the chat messages and group them by sender and user
+        const chats = await Chat.aggregate([
+            { $match: { room: "general" } }, // If you're filtering by room, else remove this line
+            {
+                $group: {
+                    _id: { sender: "$sender", user: "$user" }, // Group by sender and user (chat participant)
+                    lastMessage: { $last: "$message" }, // Get the last message for this chat pair
+                    lastMessageTimestamp: { $last: "$createdAt" }, // Get the timestamp of the last message
+                },
+            },
+            {
+                $lookup: {
+                    from: "users", // Look up the sender's data from the 'users' collection
+                    localField: "_id.sender",
+                    foreignField: "_id",
+                    as: "sender",
+                },
+            },
+            {
+                $lookup: {
+                    from: "users", // Look up the recipient's data from the 'users' collection
+                    localField: "_id.user",
+                    foreignField: "_id",
+                    as: "user",
+                },
+            },
+            {
+                $unwind: "$sender", // Unwind the sender array so we can access it directly
+            },
+            {
+                $unwind: "$user", // Unwind the user array so we can access it directly
+            },
+            {
+                $project: {
+                    _id: 1,
+                    lastMessage: 1,
+                    lastMessageTimestamp: 1,
+                    sender: {
+                        _id: 1,
+                        name: 1,
+                        email: 1,
+                        image: 1, // Include sender's image if needed
+                    },
+                    user: {
+                        _id: 1,
+                        name: 1,
+                        email: 1,
+                        image: 1, // Include recipient's image if needed
+                    },
+                },
+            },
+        ]);
 
         if (!chats.length) {
             return res.status(404).json({ success: false, message: "No chats found" });
         }
 
-        res.status(200).json({ success: true, chats });
+        // Return the aggregated chat data with the last message
+        return res.status(200).json({ success: true, chats });
     } catch (error) {
         console.error("Error fetching chats:", error);
-        res.status(500).json({ success: false, message: "Internal server error", error: error.message });
+        return res.status(500).json({ success: false, message: "Internal server error", error: error.message });
     }
 });
+
 
 // Fetch messages for a specific user
 router.get("/user/:userId", async (req, res) => {
@@ -82,9 +134,9 @@ router.get("/messages/:senderId/:receiverId", async (req, res) => {
                 { user: receiverId, sender: senderId }
             ]
         })
-        .populate("user", "name email image")
-        .populate("sender", "name email image")
-        .sort({ createdAt: 1 }); // Sorting messages in ascending order by creation date
+            .populate("user", "name email image")
+            .populate("sender", "name email image")
+            .sort({ createdAt: 1 }); // Sorting messages in ascending order by creation date
 
         if (!messages.length) {
             return res.status(404).json({ message: "No messages found between these users" });
@@ -123,7 +175,7 @@ router.post("/messages", async (req, res) => {
     } catch (err) {
         console.error('Error sending message:', err.response?.data || err.message); // Log the complete error response
         setError('Error sending message');
-      }
+    }
 });
 
 // Update a chat message by ID
