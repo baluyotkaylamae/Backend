@@ -15,177 +15,57 @@ const FILE_TYPE_MAP = {
 };
 
 const storage = multer.memoryStorage();
-
 const uploadOptions = multer({ storage: storage });
 
+// Function to update the user's online status
+async function updateOnlineStatus(userId, status) {
+    try {
+        const user = await User.findById(userId);
+        if (!user) {
+            throw new Error('User not found');
+        }
+
+        user.isOnline = status;
+        await user.save();
+        console.log(`User ${userId} is now ${status ? 'online' : 'offline'}`);
+    } catch (error) {
+        console.error('Error updating online status:', error);
+    }
+}
+
+// Get all users
 router.get(`/`, async (req, res) => {
     const userList = await User.find().select('-passwordHash');
-    console.log(userList)
-
     if (!userList) {
-        res.status(500).json({ success: false })
+        return res.status(500).json({ success: false });
     }
     res.send(userList);
-})
+});
 
-// router.get('/:id', async (req, res) => {
-//     const user = await User.findById(req.params.id).select('-passwordHash');
-
-//     if (!user) {
-//         res.status(500).json({ message: 'The user with the given ID was not found.' })
-//     }
-//     res.status(200).send(user);
-// })
+// Get user by ID
 router.get('/:id', async (req, res) => {
     try {
         const userId = req.params.id;
-
-        // Log the incoming ID
-        console.log(`Fetching user with ID: ${userId}`);
-
-        // Validate the ID
         if (!mongoose.Types.ObjectId.isValid(userId)) {
-            console.log('Invalid ID format');
             return res.status(400).json({ success: false, message: 'Invalid user ID format' });
         }
 
-        // Fetch user from the database
         const user = await User.findById(userId).select('-passwordHash');
-
-        // Log the found user or lack thereof
         if (!user) {
-            console.log(`User not found for ID: ${userId}`);
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        console.log('User found:', user);
         return res.status(200).json({ success: true, user });
     } catch (error) {
-        console.error('Error fetching user:', error);
         return res.status(500).json({ success: false, message: 'Internal server error', error: error.message || error });
     }
 });
 
-
-
-router.post('/', async (req, res) => {
-    const saltRounds = 10;
-    const salt = bcrypt.genSaltSync(saltRounds);
-    let password = await bcrypt.hashSync(req.body.password, salt);
-
-    let user = new User({
-        name: req.body.name,
-        email: req.body.email,
-        passwordHash: password,
-        phone: req.body.phone,
-        isAdmin: req.body.isAdmin,
-        street: req.body.street,
-        apartment: req.body.apartment,
-        zip: req.body.zip,
-        city: req.body.city,
-        country: req.body.country,
-    })
-
-    user = await user.save();
-
-    if (!user)
-        return res.status(400).send('the user cannot be created!')
-
-    res.send(user);
-})
-
-// router.put('/:id', async (req, res) => {
-//     try {
-//         const userExist = await User.findById(req.params.id);
-//         if (!userExist) {
-//             return res.status(404).json({ success: false, message: 'User not found' });
-//         }
-
-//         let newPassword;
-//         if (req.body.password) {
-//             newPassword = bcrypt.hashSync(req.body.password, 10);
-//         } else {
-//             newPassword = userExist.passwordHash;
-//         }
-
-//         const updatedUser = await User.findByIdAndUpdate(
-//             req.params.id,
-//             {
-//                 name: req.body.name,
-//                 email: req.body.email,
-//                 passwordHash: newPassword,
-//                 phone: req.body.phone,
-//                 isAdmin: req.body.isAdmin,
-//                 street: req.body.street,
-//                 apartment: req.body.apartment,
-//                 zip: req.body.zip,
-//                 city: req.body.city,
-//                 country: req.body.country,
-//             },
-//             { new: true }
-//         );
-
-//         if (!updatedUser) {
-//             return res.status(400).json({ success: false, message: 'User update failed' });
-//         }
-
-//         return res.status(200).json({ success: true, message: 'User updated successfully', user: updatedUser });
-//     } catch (error) {
-//         console.error('Error updating user:', error);
-//         return res.status(500).json({ success: false, message: 'Internal server error' });
-//     }
-// });
-
-router.put('/:id', upload.single('image'), async (req, res) => {
-    try {
-
-        const userExist = await User.findById(req.params.id);
-        if (!userExist) {
-            return res.status(404).json({ success: false, message: 'User not found' });
-        }
-
-        const newPassword = req.body.password ? bcrypt.hashSync(req.body.password, 10) : userExist.passwordHash;
-
-        const updateData = {
-            name: req.body.name,
-            email: req.body.email,
-            passwordHash: newPassword,
-            phone: req.body.phone,
-            isAdmin: req.body.isAdmin,
-            street: req.body.street,
-            apartment: req.body.apartment,
-            zip: req.body.zip,
-            city: req.body.city,
-            country: req.body.country,
-        };
-
-        // Handle image upload
-        if (req.file) {
-            console.log('Image file received:', req.file); // Debugging line
-            // The CloudinaryStorage already handles uploading; you just need to save the URL
-            const uploadedImageUrl = req.file.path; // This should be the URL from Cloudinary
-            console.log('Uploaded image URL:', uploadedImageUrl); // Verify this output
-            updateData.image = uploadedImageUrl; // Store the image URL from Cloudinary
-        }
-
-        const updatedUser = await User.findByIdAndUpdate(req.params.id, updateData, { new: true });
-        if (!updatedUser) {
-            return res.status(400).json({ success: false, message: 'User update failed' });
-        }
-
-        return res.status(200).json({ success: true, message: 'User updated successfully', data: updatedUser });
-    } catch (error) {
-        console.error("Error updating user:", error);
-        return res.status(500).json({ success: false, message: 'Server error' });
-    }
-});
-
+// Login route
 router.post('/login', async (req, res) => {
-    console.log(req.body);
     const user = await User.findOne({ email: req.body.email });
-
     const secret = process.env.secret;
-    console.log('JWT Secret:', secret);
+
     if (!user) {
         return res.status(400).send('The user not found');
     }
@@ -199,67 +79,57 @@ router.post('/login', async (req, res) => {
             secret,
             { expiresIn: '1d' }
         );
-        console.log('Generated Token:', token);
 
-        const decoded = jwt.verify(token, secret);
-        console.log('Decoded token:', decoded);
+        // Update online status when user logs in
+        await updateOnlineStatus(user.id, true);
 
         res.status(200).send({ user: user.email, token: token });
     } else {
-        res.status(400).send('password is wrong!');
+        res.status(400).send('Password is incorrect!');
     }
 });
 
-// Use the upload middleware to handle image uploads
+// Logout route
+router.post('/logout', async (req, res) => {
+    const { userId } = req.body;  // Assuming you send the userId with the logout request
+
+    console.log('Logging out user with ID:', userId);  // Log userId to check
+
+    try {
+        // Update online status to false when user logs out
+        await updateOnlineStatus(userId, false);
+
+        res.status(200).send({ message: 'User logged out and online status updated' });
+    } catch (error) {
+        console.error('Error updating online status:', error); // Log error if it occurs
+        res.status(500).send('Error updating online status');
+    }
+});
+
+// Register route
 router.post('/register', upload.single('image'), async (req, res) => {
     try {
-        // Create user object
         const user = new User({
             name: req.body.name,
             email: req.body.email,
-            passwordHash: bcrypt.hashSync(req.body.password, 10), // Remember to hash the password appropriately
+            passwordHash: bcrypt.hashSync(req.body.password, 10),
             phone: req.body.phone,
-            isAdmin: req.body.isAdmin === 'true', // Convert to boolean
+            isAdmin: req.body.isAdmin === 'true',
             street: req.body.street,
             apartment: req.body.apartment,
             zip: req.body.zip,
             city: req.body.city,
             country: req.body.country,
-            image: req.file.path, // The path returned by Cloudinary
+            image: req.file.path, // Image path from Cloudinary
         });
 
-        // Save the user to the database
         await user.save();
-
-        return res.status(200).json({ message: 'User registered successfully!', user });
+        res.status(200).json({ message: 'User registered successfully!', user });
     } catch (error) {
         return res.status(500).json({ error: error.message });
     }
 });
 
-router.delete('/:id', async (req, res) => {
-    try {
-        const user = await User.findByIdAndDelete(req.params.id);
-        if (user) {
-            return res.status(200).json({ success: true, message: 'The user is deleted!' });
-        } else {
-            return res.status(404).json({ success: false, message: 'User not found!' });
-        }
-    } catch (error) {
-        return res.status(500).json({ success: false, error: error.message });
-    }
-});
-
-// router.get(`/get/count`, async (req, res) => {
-//     const userCount = await User.countDocuments();
-
-//     if (!userCount) {
-//         return res.status(500).json({ success: false });
-//     }
-//     res.send({
-//         userCount: userCount
-//     });
-// });
 
 router.post('/googlelogin', async (req, res) => {
     const { response } = req.body;

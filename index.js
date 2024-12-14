@@ -55,6 +55,8 @@ const cors = require("cors");
 const authJwt = require("./helpers/jwt");
 const errorHandler = require("./helpers/error-handler");
 const { Chat } = require("./models/chat"); // Import the Chat model
+const { User } = require("./models/user"); // Make sure you have the User model imported here
+
 require("dotenv/config");
 
 const app = express();
@@ -95,16 +97,27 @@ app.use(`${api}/chat`, chatRoutes);
 io.on("connection", (socket) => {
   console.log(`User connected: ${socket.id}`);
 
-  // Join a room
-  socket.on("joinRoom", (room) => {
-    socket.join(room);
-    console.log(`User ${socket.id} joined room: ${room}`);
+  let userId;
+
+  // When user is set
+  socket.on("setUser", async (id) => {
+    userId = id;
+    console.log(`User ${userId} is now online`);
+    
+    // Update user online status in the database
+    try {
+      await User.findByIdAndUpdate(userId, { isOnline: true });
+
+      // Emit the "user-online" event to notify other users
+      io.emit("user-online", userId); // Notify other users that the user is online
+    } catch (error) {
+      console.error("Error updating online status:", error);
+    }
   });
 
   // Listen for new messages
   socket.on("sendMessage", async ({ user, message, room }) => {
     try {
-      // Save the message to the database
       const newMessage = new Chat({ user, message, room });
       const savedMessage = await newMessage.save();
 
@@ -116,11 +129,25 @@ io.on("connection", (socket) => {
     }
   });
 
-  // Disconnect handling
-  socket.on("disconnect", () => {
+  // Handle disconnect
+  socket.on("disconnect", async () => {
     console.log(`User disconnected: ${socket.id}`);
+
+    if (userId) {
+      try {
+        // Update user online status to false
+        await User.findByIdAndUpdate(userId, { isOnline: false });
+        console.log(`User ${userId} is now offline`);
+
+        // Emit the "user-offline" event to notify other users
+        io.emit("user-offline", userId); // Notify other users that the user is offline
+      } catch (error) {
+        console.error("Error updating offline status:", error);
+      }
+    }
   });
 });
+
 
 // Database connection
 mongoose
