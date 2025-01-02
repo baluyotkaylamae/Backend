@@ -83,6 +83,9 @@ const usersRoutes = require("./routes/users");
 const categoryRoutes = require("./routes/categories");
 const postsRoutes = require("./Posts/route/Posts");
 const dashboard = require("./routes/Dashboard");
+const GourdType = require("./routes/GourdMonitoring/GourdType");
+const GourdVariety = require("./routes/GourdMonitoring/GourdTypeVariety");
+const Monitoring = require("./routes/GourdMonitoring/Monitoring");
 const chatRoutes = require("./chat/ChatController");
 
 const api = process.env.API_URL;
@@ -91,6 +94,9 @@ app.use(`${api}/users`, usersRoutes);
 app.use(`${api}/category`, categoryRoutes);
 app.use(`${api}/posts`, postsRoutes);
 app.use(`${api}/dashboards`, dashboard);
+app.use(`${api}/GourdType`, GourdType);
+app.use(`${api}/GourdVariety`, GourdVariety);
+app.use(`${api}/Monitoring`, Monitoring);
 app.use(`${api}/chat`, chatRoutes);
 
 // Socket.IO Chat Handling

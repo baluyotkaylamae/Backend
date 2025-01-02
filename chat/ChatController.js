@@ -76,54 +76,6 @@ router.get("/chats", async (req, res) => {
     }
 });
 
-
-// // Fetch messages for a specific user
-// router.get("/user/:userId", async (req, res) => {
-//     // const { userId } = req.params;
-//     const userId = req.params.userId;
-//     try {
-//         console.log("Fetching chats for user ID:", userId);
-//         const chats = await Chat.find({
-//             $or: [{ user: userId }, { sender: userId }],
-//         })
-//             .populate("user", "name image")
-//             .populate("sender", "name image");
-
-//         if (!chats.length) {
-//             return res.status(404).json({ message: "No chats found for this user" });
-//         }
-
-//         res.status(200).json({ chats });
-//     } catch (error) {
-//         console.error("Error fetching chats:", error);
-//         res.status(500).json({ error: "Internal server error" });
-//     }
-// });
-
-
-
-// // Fetch messages for a specific room
-// router.get("/room/:room", async (req, res) => {
-//     try {
-//         const { room } = req.params;
-
-//         const chats = await Chat.find({ room })
-//             .populate("user", "name email")
-//             .populate("sender", "name email")
-//             .sort({ createdAt: -1 });
-
-//         if (!chats.length) {
-//             return res.status(404).json({ success: false, message: "No messages found for this room" });
-//         }
-
-//         res.status(200).json({ success: true, chats });
-//     } catch (error) {
-//         console.error("Error fetching room messages:", error);
-//         res.status(500).json({ success: false, message: "Internal server error", error: error.message });
-//     }
-// });
-
-
 // Fetch messages between sender and receiver
 router.get("/messages/:senderId/:receiverId", async (req, res) => {
     const { senderId, receiverId } = req.params;
@@ -234,26 +186,26 @@ router.put('/messages/read', authJwt(), async (req, res) => {
     }
 });
 
-// // Delete a chat message by ID
-// router.delete("/:id", async (req, res) => {
-//     try {
-//         const chatId = req.params.id;
+// Delete a chat message by ID
+router.delete("/:id", async (req, res) => {
+    try {
+        const chatId = req.params.id;
 
-//         if (!mongoose.Types.ObjectId.isValid(chatId)) {
-//             return res.status(400).json({ success: false, message: "Invalid chat ID format" });
-//         }
+        if (!mongoose.Types.ObjectId.isValid(chatId)) {
+            return res.status(400).json({ success: false, message: "Invalid chat ID format" });
+        }
 
-//         const deletedChat = await Chat.findByIdAndDelete(chatId);
+        const deletedChat = await Chat.findByIdAndDelete(chatId);
 
-//         if (!deletedChat) {
-//             return res.status(404).json({ success: false, message: "Chat not found" });
-//         }
+        if (!deletedChat) {
+            return res.status(404).json({ success: false, message: "Chat not found" });
+        }
 
-//         res.status(200).json({ success: true, message: "Chat deleted successfully" });
-//     } catch (error) {
-//         console.error("Error deleting chat:", error);
-//         res.status(500).json({ success: false, message: "Internal server error", error: error.message });
-//     }
-// });
+        res.status(200).json({ success: true, message: "Chat deleted successfully" });
+    } catch (error) {
+        console.error("Error deleting chat:", error);
+        res.status(500).json({ success: false, message: "Internal server error", error: error.message });
+    }
+});
 
 module.exports = router;
