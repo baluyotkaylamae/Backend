@@ -71,7 +71,7 @@ router.get("/chats", async (req, res) => {
         // Return the aggregated chat data with the last message
         return res.status(200).json({ success: true, chats });
     } catch (error) {
-        console.error("Error fetching chats:", error);
+        // console.error("Error fetching chats:", error);
         return res.status(500).json({ success: false, message: "Internal server error", error: error.message });
     }
 });
@@ -98,7 +98,7 @@ router.get("/messages/:senderId/:receiverId", async (req, res) => {
 
         res.status(200).json({ messages });
     } catch (error) {
-        console.error("Error fetching messages:", error);
+        // console.error("Error fetching messages:", error);
         res.status(500).json({ message: "Internal server error", error: error.message });
     }
 });
@@ -125,6 +125,7 @@ router.post("/messages", async (req, res) => {
 
         const savedChat = await newChat.save();
 
+        savedChat.populate("sender", "name email image");
         res.status(201).json({ success: true, message: "Chat created successfully", chat: savedChat });
     } catch (err) {
         console.error('Error sending message:', err.response?.data || err.message); // Log the complete error response
@@ -165,7 +166,7 @@ router.put('/messages/read', authJwt(), async (req, res) => {
         return res.status(400).send({ message: 'Invalid message IDs' });
       }
 
-      console.log('Messages received to mark as read:', messages);
+    //   console.log('Messages received to mark as read:', messages);
   
       // Update isRead to true for all the message IDs
       const result = await Chat.updateMany(
@@ -174,14 +175,14 @@ router.put('/messages/read', authJwt(), async (req, res) => {
       );
 
       if (result.modifiedCount > 0) {
-        console.log('Messages marked as read:', result);
+        // console.log('Messages marked as read:', result);
       } else {
-        console.log('No messages were updated.');
+        // console.log('No messages were updated.');
       }
 
       res.status(200).send({ message: 'Messages marked as read' });
     } catch (err) {
-      console.error(err);
+    //   console.error(err);
       res.status(500).send({ message: 'Failed to mark messages as read' });
     }
 });
@@ -203,7 +204,7 @@ router.delete("/:id", async (req, res) => {
 
         res.status(200).json({ success: true, message: "Chat deleted successfully" });
     } catch (error) {
-        console.error("Error deleting chat:", error);
+        // console.error("Error deleting chat:", error);
         res.status(500).json({ success: false, message: "Internal server error", error: error.message });
     }
 });

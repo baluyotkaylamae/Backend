@@ -61,19 +61,19 @@ require("dotenv/config");
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: "*", // Replace with your frontend URL in production
-    methods: ["GET", "POST"],
-  },
-});
+// const io = new Server(server, {
+//   cors: {
+//     origin: "*", // Replace with your frontend URL in production
+//     methods: ["GET", "POST"],
+//   },
+// });
 
 app.use(cors());
 app.options("*", cors());
 
 // Middleware
 app.use(express.json());
-app.use(morgan("tiny"));
+// app.use(morgan("tiny"));
 app.use(authJwt());
 app.use(errorHandler);
 app.use("/public/uploads", express.static(__dirname + "/public/uploads"));
@@ -99,12 +99,30 @@ app.use(`${api}/GourdVariety`, GourdVariety);
 app.use(`${api}/Monitoring`, Monitoring);
 app.use(`${api}/chat`, chatRoutes);
 
+// Start the server
+const SERVER = app.listen(4000, () => {
+  console.log("Server is running on http://localhost:4000");
+});
+
+
+const io = new Server(SERVER, {
+  cors: {
+    origin: "*", // Replace with your frontend URL in production
+  },
+});
+
+const ONLINE_USERS = new Map(); 
 // Socket.IO Chat Handling
 io.on("connection", (socket) => {
   console.log(`User connected: ${socket.id}`);
 
   let userId;
 
+  socket.on("joinRoom", (data) => {
+    console.log(data);
+    const { userId } = data;
+    ONLINE_USERS.set(userId, socket);
+  });
   // When user is set
   socket.on("setUser", async (id) => {
     userId = id;
@@ -122,14 +140,24 @@ io.on("connection", (socket) => {
   });
 
   // Listen for new messages
-  socket.on("sendMessage", async ({ user, message, room }) => {
-    try {
-      const newMessage = new Chat({ user, message, room });
-      const savedMessage = await newMessage.save();
 
-      // Emit the message to the room
-      io.to(room).emit("receiveMessage", savedMessage);
-      console.log(`Message from ${user} in room ${room}: ${message}`);
+  socket.on("sendMessage", async (data) => {
+    try {
+      const onlineUser = ONLINE_USERS.get(data.userId);
+      console.log(onlineUser);
+      if (onlineUser) {
+
+        console.log(data);
+        onlineUser.emit("receiveMessage", data);
+      }
+
+      // const newMessage = new Chat({ user, message, room });
+      // const savedMessage = await newMessage.save();
+
+      // // Emit the message to the room
+      // io.to(room).emit("receiveMessage", savedMessage);
+      // console.log(`Message from ${user} in room ${room}: ${message}`);
+      
     } catch (error) {
       console.error("Error saving and emitting message:", error);
     }
@@ -167,7 +195,4 @@ mongoose
     console.log(err);
   });
 
-// Start the server
-server.listen(4000, () => {
-  console.log("Server is running on http://localhost:4000");
-});
+

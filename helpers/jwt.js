@@ -35,7 +35,7 @@ function authJwt() {
         });
 }
 async function isRevoked(req, payload) {
-    console.log('Token payload in isRevoked:', JSON.stringify(payload, null, 2));
+    // console.log('Token payload in isRevoked:', JSON.stringify(payload, null, 2));
     return false;
 }
 
