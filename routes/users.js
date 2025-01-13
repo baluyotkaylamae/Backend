@@ -158,6 +158,50 @@ router.post('/googlelogin', async (req, res) => {
     }
 });
 
+// Delete user route
+router.delete('/:id', async (req, res) => {
+    const userId = req.params.id;
+
+    try {
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+            return res.status(400).json({ success: false, message: 'Invalid user ID format' });
+        }
+
+        const user = await User.findByIdAndDelete(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        res.status(200).json({ success: true, message: 'User deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to delete user', error: error.message });
+    }
+});
+
+// Route for changing user role
+router.patch('/:id/role', async (req, res) => {
+    try {
+      const userId = req.params.id;
+      const { isAdmin } = req.body;
+  
+      // Check if user exists
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
+  
+      // Update the role
+      user.isAdmin = isAdmin;
+      await user.save();
+  
+      res.status(200).json({ success: true, message: 'User role updated successfully', user });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+  });
+  
+
 // Helper function to send JWT token
 function sendToken(user, statusCode, res) {
     const secret = process.env.secret;
