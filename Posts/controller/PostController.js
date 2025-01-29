@@ -24,7 +24,8 @@ exports.createPost = async (req, res) => {
             images,  // Save array of image URLs
             user: userId, // Use the authenticated user's ID
             category,
-            likes: 0
+            likes: 0,
+            status: 'Pending' // Default status
         });
 
         const savedPost = await post.save();
@@ -33,7 +34,6 @@ exports.createPost = async (req, res) => {
         res.status(400).json({ message: error.message });
     }
 };
-
 
 // Get all posts
 exports.getPosts = async (req, res) => {
@@ -47,7 +47,8 @@ exports.getPosts = async (req, res) => {
             })
             .populate({
                 path: 'comments.replies.user', // Populate user details for replies within comments
-                select: 'name image', })
+                select: 'name image',
+            })
             ;
         res.status(200).json(posts);
     } catch (error) {
@@ -78,10 +79,10 @@ exports.getPostById = async (req, res) => {
 
 exports.updatePost = async (req, res) => {
     try {
-        const { category, ...rest } = req.body; // Extract category and other fields from the body
+        const { category, status, ...rest } = req.body; // Extract category, status, and other fields from the body
 
         // Upload each new image to Cloudinary and get their URLs
-        const newImages = req.files.map(file => file.path); // Get the array of image URLs
+        const newImages = req.files ? req.files.map(file => file.path) : []; // Get the array of image URLs
 
         // Find the post to update
         const post = await Post.findById(req.params.id);
@@ -105,6 +106,36 @@ exports.updatePost = async (req, res) => {
         res.status(400).json({ message: error.message });
     }
 };
+
+// Update post status
+exports.updatePostStatus = async (req, res) => {
+    try {
+        const { status } = req.body;  // Expect the status from the body (Approved, Failed)
+
+        // Validate status
+        if (!['Approved', 'Rejected'].includes(status)) {
+            return res.status(400).json({ message: 'Invalid status' });
+        }
+
+        // Find the post by ID
+        const post = await Post.findById(req.params.id);
+
+        if (!post) {
+            return res.status(404).json({ message: 'Post not found' });
+        }
+
+        // Update the status
+        post.status = status;
+
+        const updatedPost = await post.save(); // Save the updated post
+        res.status(200).json(updatedPost);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+};
+
+
+
 
 // Delete a post by ID
 exports.deletePost = async (req, res) => {
@@ -247,7 +278,7 @@ exports.deleteComment = async (req, res) => {
         // Remove the comment from the array
         post.comments.pull(commentId);  // Using pull to remove by comment ID
         await post.save();
-        
+
         res.status(204).send(); // No content response for successful deletion
     } catch (error) {
         res.status(500).json({ message: error.message });

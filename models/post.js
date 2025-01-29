@@ -71,6 +71,11 @@ const postSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     }], // Array to track users who liked the post
+    status: {
+        type: String,
+        enum: ['Pending', 'Approved', 'Rejected'],
+        default: 'Pending'
+    } // Status 
 });
 
 // Update the updatedAt field before saving the post

@@ -30,6 +30,7 @@ router.put('/:postId/like', authJwt(), postController.likePost);
 // Routes for managing replies
 router.put('/:postId/comments/:commentId/replies/:replyId', authJwt(), postController.editReply); // Edit a reply
 router.delete('/:postId/comments/:commentId/replies/:replyId', authJwt(), postController.deleteReply); // Delete a reply
+router.put('/status/:id', authJwt(), postController.updatePostStatus);
 
 // Export the router
 module.exports = router;
