@@ -25,11 +25,19 @@ const monitoringSchema = new mongoose.Schema({
     required: true,
     min: 0,
   },
+  pollinatedFlowerImages: [{
+    type: String,  // Assuming these are image URLs
+    required: false,  // Set to true if the images are mandatory
+  }],
   fruitsHarvested: {
     type: Number,
     default: 0,
     min: 0,
   },
+  fruitHarvestedImages: [{
+    type: String,  // Assuming these are image URLs
+    required: false,  // Set to true if the images are mandatory
+  }],
   dateOfFinalization: {
     type: Date,
     default: null,
